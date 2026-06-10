@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b1120">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Rádio Via Cristais · Ao Vivo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,600;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --accent: #2563eb; /* Azul Estudio */
+            --accent-dim: rgba(37, 99, 235, 0.15);
+            --accent-glow: rgba(37, 99, 235, 0.25);
+            --bg-deep: #f8fafc; /* Fundo cinza claro / branco */
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --border: rgba(15, 23, 42, 0.1);
+            --text-dim: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: #1e293b;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* -------- BACKGROUND -------- */
+        .bg-orbs {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: drift 20s infinite alternate ease-in-out;
+        }
+        .orb-1 { width: 500px; height: 500px; background: #bfdbfe; top: -200px; left: -100px; animation-delay: 0s; }
+        .orb-2 { width: 400px; height: 400px; background: #c7d2fe; bottom: -150px; right: -100px; animation-delay: -7s; }
+        .orb-3 { width: 300px; height: 300px; background: #e0f2fe; top: 40%; left: 50%; animation-delay: -14s; opacity: 0.5; }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 40px) scale(1.1); }
+        }
+
+        /* -------- LAYOUT -------- */
+        .app-shell {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100dvh;
+            padding: 24px 16px 100px;
+        }
+
+        /* -------- GLASS CARD -------- */
+        .glass {
+            background: var(--bg-card);
+            backdrop-filter: blur(40px) saturate(160%);
+            -webkit-backdrop-filter: blur(40px) saturate(160%);
+            border: 1px solid var(--border);
+        }
+
+        /* -------- STATUS BAR -------- */
+        .status-bar {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-radius: 100px;
+            margin-bottom: 20px;
+        }
+        .live-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+            animation: ping-live 1.5s infinite;
+        }
+        .live-dot.offline { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.15); animation: none; }
+
+        @keyframes ping-live {
+            0%, 100% { box-shadow: 0 0 0 3px var(--accent-dim); }
+            50% { box-shadow: 0 0 0 8px transparent; }
+        }
+
+        /* -------- LOGO / HEADER -------- */
+        .logo-area {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .logo-img {
+            width: 52px; height: 52px;
+            border-radius: 16px;
+            object-fit: contain;
+            border: none;
+            background: transparent;
+        }
+        .logo-text h1 {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #1e293b;
+            line-height: 1.1;
+        }
+        .logo-text p {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+
+        /* -------- PLAYER MAIN CARD -------- */
+        .player-card {
+            width: 100%;
+            max-width: 420px;
+            border-radius: 32px;
+            padding: 28px 24px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        }
+
+        /* -------- COVER ART -------- */
+        .cover-wrap {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+        .cover-glow {
+            position: absolute;
+            inset: -20px;
+            background: var(--accent-glow);
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.4;
+            transition: opacity 0.6s;
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { opacity: 0.35; transform: scale(0.95); }
+            50% { opacity: 0.6; transform: scale(1.05); }
+        }
+        .cover-img {
+            position: relative;
+            z-index: 1;
+            width: 200px;
+            height: 200px;
+            border-radius: 24px;
+            object-fit: cover;
+            border: 2px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            transition: transform 0.5s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+        }
+        .cover-img.changing { opacity: 0; transform: scale(0.9); }
+
+        /* Vinyl ring when playing */
+        .vinyl-ring {
+            position: absolute;
+            z-index: 0;
+            width: 220px; height: 220px;
+            top: -10px; left: -10px;
+            border-radius: 50%;
+            border: 2px solid rgba(16, 185, 129, 0.2);
+            display: none;
+            animation: spin-vinyl 12s linear infinite;
+        }
+        .playing .vinyl-ring { display: block; }
+        @keyframes spin-vinyl {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* -------- SONG INFO -------- */
+        .song-info {
+            text-align: center;
+            width: 100%;
+            padding: 0 8px;
+        }
+        .song-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.2;
+            letter-spacing: -0.3px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            transition: opacity 0.3s;
+        }
+        .song-artist {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: 6px;
+            min-height: 18px;
+            transition: opacity 0.3s;
+        }
+        .block-info {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 8px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        /* -------- VU METER / BARS -------- */
+        .vu-meter {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 28px;
+        }
+        .vu-bar {
+            width: 4px;
+            border-radius: 2px;
+            background: var(--accent);
+            animation: vu-anim 0.6s ease-in-out infinite alternate;
+        }
+        .vu-bar:nth-child(1) { animation-delay: 0s; animation-duration: 0.5s; }
+        .vu-bar:nth-child(2) { animation-delay: 0.1s; animation-duration: 0.7s; }
+        .vu-bar:nth-child(3) { animation-delay: 0.2s; animation-duration: 0.4s; }
+        .vu-bar:nth-child(4) { animation-delay: 0.05s; animation-duration: 0.8s; }
+        .vu-bar:nth-child(5) { animation-delay: 0.15s; animation-duration: 0.55s; }
+        .vu-bar:nth-child(6) { animation-delay: 0.25s; animation-duration: 0.65s; }
+        @keyframes vu-anim {
+            from { height: 4px; opacity: 0.4; }
+            to { height: 24px; opacity: 1; }
+        }
+        .vu-meter.paused .vu-bar { animation: none; height: 4px; opacity: 0.3; }
+
+        /* -------- CONTROLS -------- */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+        }
+        .btn-play {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+            transition: transform 0.15s, box-shadow 0.3s;
+            position: relative;
+        }
+        .btn-play:hover { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0.15); transform: scale(1.02); }
+        .btn-play.playing { animation: pulse-play 2s infinite; }
+        
+        @keyframes pulse-play {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+        .btn-play svg { color: #fff; }
+
+        /* -------- VOLUME -------- */
+        .volume-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px 16px;
+        }
+        .vol-icon { color: var(--text-dim); flex-shrink: 0; }
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 6px var(--accent-glow);
+        }
+        .vol-pct {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dim);
+            min-width: 32px;
+            text-align: right;
+        }
+
+        /* -------- SECTION CARDS -------- */
+        .section-card {
+            width: 100%;
+            max-width: 420px;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 14px;
+        }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            margin-bottom: 16px;
+        }
+        .section-title svg { color: var(--accent); }
+
+        /* -------- NEXT UP -------- */
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .queue-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .queue-num {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-dim);
+            min-width: 20px;
+            text-align: center;
+        }
+        .queue-thumb {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            background: #1e293b;
+            flex-shrink: 0;
+        }
+        .queue-info { flex: 1; min-width: 0; }
+        .queue-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #f1f5f9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .queue-sub {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .queue-empty {
+            font-size: 13px;
+            color: var(--text-dim);
+            text-align: center;
+            padding: 16px 0;
+        }
+
+        /* -------- REQUEST -------- */
+        .request-row {
+            display: flex;
+            gap: 10px;
+        }
+        .request-input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 13px 16px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            color: #f1f5f9;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .request-input::placeholder { color: rgba(148,163,184,0.5); font-weight: 500; }
+        .request-input:focus { border-color: var(--accent); }
+        .btn-send {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            background: var(--accent);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s, background 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-send:hover { background: #059669; transform: scale(1.05); }
+        .btn-send:active { transform: scale(0.93); }
+        .btn-send svg { color: #fff; }
+
+        /* -------- TOAST -------- */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1e293b;
+            border: 1px solid var(--border);
+            color: #f1f5f9;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 12px 22px;
+            border-radius: 100px;
+            pointer-events: none;
+            z-index: 100;
+            transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+            opacity: 0;
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* -------- CONNECTION STATUS -------- */
+        .conn-status {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .conn-ok { color: var(--accent); }
+        .conn-err { color: #f87171; }
+        .conn-loading { color: #f59e0b; }
+
+        /* -------- FOOTER -------- */
+        .app-footer {
+            text-align: center;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(100, 116, 139, 0.6);
+            margin-top: 8px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<div class="app-shell">
+
+    <!-- STATUS BAR -->
+    <div class="glass status-bar">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <div class="live-dot offline" id="live-dot"></div>
+            <span class="conn-status conn-loading" id="conn-label">Conectando...</span>
+        </div>
+        <span style="font-size:11px; font-weight:700; color:rgba(148,163,184,0.5); letter-spacing:0.06em;" id="time-display"></span>
+    </div>
+
+    <!-- LOGO -->
+    <div class="logo-area">
+        <img src="https://viacristais.com.br/wp-content/uploads/2025/01/ViaCristais_compact_RGB-800x600.jpg"
+             class="logo-img" alt="Logo Via Cristais">
+        <div class="logo-text">
+            <h1>Rádio Via Cristais</h1>
+            <p>Ao Vivo · Estúdio</p>
+        </div>
+    </div>
+
+    <!-- MAIN PLAYER CARD -->
+    <div class="player-card glass" id="player-card">
+
+        <!-- Cover Art -->
+        <div class="cover-wrap">
+            <div class="cover-glow" id="cover-glow"></div>
+            <div class="vinyl-ring" id="vinyl-ring"></div>
+            <img id="cover-img"
+                 src="https://viacristais.com.br/wp-content/uploads/2025/01/ViaCristais_compact_RGB-800x600.jpg"
+                 class="cover-img"
+                 alt="Capa">
+        </div>
+
+        <!-- Song Info -->
+        <div class="song-info">
+            <div class="song-title" id="song-title">Estúdio Via Cristais</div>
+            <div class="song-artist" id="song-artist">A tocar agora</div>
+            <div class="block-info" id="block-info"></div>
+        </div>
+
+        <!-- VU Meter -->
+        <div class="vu-meter paused" id="vu-meter">
+            <div class="vu-bar"></div>
+            <div class="vu-bar"></div>
+            <div class="vu-bar"></div>
+            <div class="vu-bar"></div>
+            <div class="vu-bar"></div>
+            <div class="vu-bar"></div>
+        </div>
+
+        <!-- Play Button -->
+        <div class="controls-row">
+            <button class="btn-play" id="btn-play" onclick="togglePlay()">
+                <i data-lucide="play" id="icon-play" style="width:32px;height:32px;margin-left:4px;fill:white;"></i>
+                <i data-lucide="pause" id="icon-pause" style="width:32px;height:32px;fill:white;display:none;"></i>
+            </button>
+        </div>
+
+        <!-- Volume -->
+        <div class="volume-row">
+            <i data-lucide="volume-2" class="vol-icon" style="width:18px;height:18px;"></i>
+            <input type="range" id="volume-slider" min="0" max="100" value="80"
+                   oninput="updateVolume(this.value)">
+            <span class="vol-pct" id="vol-pct">80%</span>
+        </div>
+    </div>
+
+    <!-- PRÓXIMAS MÚSICAS -->
+    <div class="section-card glass" id="queue-card">
+        <div class="section-title">
+            <i data-lucide="list-music" style="width:14px;height:14px;"></i>
+            Próximas da Fila
+        </div>
+        <div id="queue-list">
+            <div class="queue-empty">A carregar a programação...</div>
+        </div>
+    </div>
+
+    <!-- PEDIR MÚSICA -->
+    <div class="section-card glass">
+        <div class="section-title">
+            <i data-lucide="send" style="width:14px;height:14px;"></i>
+            Pedir uma Música
+        </div>
+        <div class="request-row">
+            <input type="text" class="request-input" id="request-input"
+                   placeholder="Qual música quer ouvir?"
+                   onkeydown="if(event.key==='Enter') sendRequest()">
+            <button class="btn-send" id="btn-send" onclick="sendRequest()">
+                <i data-lucide="send" style="width:18px;height:18px;"></i>
+            </button>
+        </div>
+        <div id="request-status" style="margin-top:12px;font-size:12px;font-weight:700;color:var(--accent);display:none;text-align:center;"></div>
+    </div>
+
+    <div class="app-footer">© 2026 Rádio Via Cristais · v2.0 Ouvinte</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<audio id="audio-player" crossorigin="anonymous"></audio>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, doc, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    // ===== CONFIG =====
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyCvaQU-mNiCOQxN6fQhq7dv-4xqoA_tq58",
+        authDomain: "radio-via-cristais.firebaseapp.com",
+        projectId: "radio-via-cristais",
+        storageBucket: "radio-via-cristais.firebasestorage.app",
+        messagingSenderId: "853836877115",
+        appId: "1:853836877115:web:5826ac7bf53d200a9a7b1e"
+    };
+
+    // URL do servidor — sempre localhost:4000 se aberto como ficheiro local (file://)
+    const isFileProtocol = window.location.protocol === 'file:';
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const NODE_SERVER_URL = (isFileProtocol || isLocalhost)
+        ? 'http://localhost:4000'
+        : window.location.origin; // Se servido pelo mesmo servidor Node (ngrok/produção)
+
+    // ===== INIT =====
+    const fbApp = initializeApp(FIREBASE_CONFIG);
+    const db    = getFirestore(fbApp);
+    const auth  = getAuth(fbApp);
+    const player = document.getElementById('audio-player');
+
+    let isPlaying   = false;
+    let playlist    = [];
+    let currentIdx  = 0;
+
+    // Auth anônimo para acessar Firestore
+    signInAnonymously(auth).catch(e => console.warn('[Auth]', e));
+
+    // ===== UTILITIES =====
+    function showToast(msg, dur = 3000) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), dur);
+    }
+
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('time-display').textContent =
+            now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function parseSongInfo(title) {
+        let songName = title || 'Sem título';
+        let artistName = '';
+        const seps = [' - ', ' – ', ' — ', ' | '];
+        for (const sep of seps) {
+            if (songName.includes(sep)) {
+                const parts = songName.split(sep);
+                artistName = parts[0].trim();
+                songName = parts.slice(1).join(sep).trim();
+                break;
+            }
+        }
+        songName = songName
+            .replace(/\(Official.*?\)/gi, '')
+            .replace(/\[Official.*?\]/gi, '')
+            .replace(/\(Clipe.*?\)/gi, '')
+            .replace(/\(Lyric.*?\)/gi, '')
+            .replace(/\(Audio.*?\)/gi, '')
+            .replace(/\(Video.*?\)/gi, '')
+            .replace(/\(HD\)/gi, '').replace(/\(HQ\)/gi, '')
+            .trim();
+        return { songName: songName || title, artistName };
+    }
+
+    function setConnectionStatus(state) {
+        const dot = document.getElementById('live-dot');
+        const label = document.getElementById('conn-label');
+        if (state === 'live') {
+            dot.className = 'live-dot';
+            label.className = 'conn-status conn-ok';
+            label.textContent = '\u25cf Ao Vivo';
+        } else if (state === 'offline') {
+            dot.className = 'live-dot offline';
+            label.className = 'conn-status conn-err';
+            label.textContent = 'Servidor Offline';
+        } else if (state === 'waiting') {
+            dot.className = 'live-dot offline';
+            label.className = 'conn-status conn-loading';
+            label.textContent = 'Aguardando Programação...';
+        } else {
+            dot.className = 'live-dot offline';
+            label.className = 'conn-status conn-loading';
+            label.textContent = 'Conectando...';
+        }
+    }
+
+    // Verifica se o servidor Node está acessível (timeout manual — maior compatibilidade)
+    async function checkServer() {
+        if (isPlaying) return; // não sobrescreve o estado "Ao Vivo"
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout
+            const res = await fetch(`${NODE_SERVER_URL}/status`, { signal: controller.signal });
+            clearTimeout(timer);
+            if (res.ok) {
+                const data = await res.json().catch(() => ({}));
+                if (data.broadcasting) {
+                    setConnectionStatus('waiting'); // servidor ok + estúdio emitindo
+                } else {
+                    setConnectionStatus('waiting'); // servidor ok, aguardando
+                }
+            } else {
+                setConnectionStatus('offline');
+            }
+        } catch (e) {
+            // AbortError = timeout; outros = servidor inacessível
+            setConnectionStatus('offline');
+        }
+    }
+    // Checar ao carregar e a cada 20s
+    checkServer();
+    setInterval(checkServer, 20000);
+
+    // ===== COVER TRANSITION =====
+    let pendingCover = null;
+    function updateCoverArt(newSrc) {
+        if (!newSrc) newSrc = 'https://viacristais.com.br/wp-content/uploads/2025/01/ViaCristais_compact_RGB-800x600.jpg';
+        const img = document.getElementById('cover-img');
+        const glow = document.getElementById('cover-glow');
+        if (img.getAttribute('src') === newSrc) return;
+        
+        img.classList.add('changing');
+        if(glow) glow.style.opacity = '0';
+        
+        setTimeout(() => {
+            img.src = newSrc;
+            if(glow) {
+                glow.style.backgroundImage = `url('${newSrc}')`;
+                glow.style.opacity = '0.5';
+            }
+            img.classList.remove('changing');
+        }, 300);
+    }
+
+    // ===== FIREBASE PLAYLIST SYNC =====
+    function listenToPlaylist() {
+        const ref = collection(db, 'artifacts', 'radio-via-cristais', 'public', 'data', 'radioplaylist');
+        onSnapshot(ref, (snap) => {
+            const list = [];
+            snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+            list.sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+            playlist = list;
+            renderQueue(playlist);
+        }, (err) => {
+            console.error('[Firestore Queue]', err);
+        });
+
+        const npRef = doc(db, 'artifacts', 'radio-via-cristais', 'public', 'data', 'now_playing', 'current');
+        onSnapshot(npRef, (snap) => {
+            if (snap.exists()) {
+                const current = snap.data();
+                if (current.title) {
+                    const { songName, artistName } = parseSongInfo(current.title);
+                    document.getElementById('song-title').textContent = songName;
+                    document.getElementById('song-artist').textContent = artistName ? `🎤 ${artistName}` : 'Rádio Via Cristais';
+                    updateCoverArt(current.thumb || 'https://viacristais.com.br/wp-content/uploads/2025/01/ViaCristais_compact_RGB-800x600.jpg');
+                    
+                    // Render upcoming queue directly from what the studio tells us is coming next
+                    if (current.upcoming) {
+                        // Reconstruct array for the UI matching old logic, mapping first item to 'Current'
+                        const adaptedQueue = [{ title: current.title, thumb: current.thumb }, ...current.upcoming];
+                        renderQueue(adaptedQueue);
+                    }
+                } else {
+                    document.getElementById('song-title').textContent = 'Estúdio Via Cristais';
+                    document.getElementById('song-artist').textContent = 'Aguardando faixa...';
+                    updateCoverArt('https://viacristais.com.br/wp-content/uploads/2025/01/ViaCristais_compact_RGB-800x600.jpg');
+                    renderQueue([]);
+                }
+            }
+        }, (err) => {
+            console.error('[Firestore NP]', err);
+            // Erro no Firestore não significa servidor de áudio offline
+            setConnectionStatus('waiting');
+        });
+    }
+
+    // ===== RENDER QUEUE =====
+    function renderQueue(list) {
+        const container = document.getElementById('queue-list');
+        if (!list || list.length === 0) {
+            container.innerHTML = '<div class="queue-empty">Nenhuma música na fila agora.</div>';
+            return;
+        }
+        // Show up to 5 upcoming tracks
+        const upcoming = list.slice(0, 5);
+        container.innerHTML = '';
+        upcoming.forEach((track, i) => {
+            const { songName, artistName } = parseSongInfo(track.title);
+            const div = document.createElement('div');
+            div.className = 'queue-item';
+            const isNow = i === 0;
+            div.innerHTML = `
+                <span class="queue-num" style="${isNow ? 'color:var(--accent);' : ''}">${isNow ? '▶' : i}</span>
+                <img class="queue-thumb" src="${track.thumb || ''}" alt="" onerror="this.src='https://viacristais.com.br/wp-content/uploads/2025/01/ViaCristais_compact_RGB-800x600.jpg'">
+                <div class="queue-info">
+                    <div class="queue-title" style="${isNow ? 'color:var(--accent);' : ''}">${songName}</div>
+                    <div class="queue-sub">${isNow ? 'A tocar agora' : (artistName || 'Próxima')}</div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // ===== PLAYER CONTROLS =====
+    window.togglePlay = () => {
+        if (isPlaying) {
+            player.pause();
+            player.src = '';
+            isPlaying = false;
+            setPlayingUI(false);
+            setConnectionStatus('live');
+        } else {
+            setConnectionStatus('loading');
+            const liveUrl = `${NODE_SERVER_URL.replace(/\/$/, '')}/live?t=${Date.now()}`;
+            player.src = liveUrl;
+            player.volume = document.getElementById('volume-slider').value / 100;
+            player.play()
+                .then(() => {
+                    isPlaying = true;
+                    setPlayingUI(true);
+                    setConnectionStatus('live');
+                })
+                .catch(() => {
+                    setConnectionStatus('offline');
+                    showToast('⚠️ O estúdio parece estar offline. Tente novamente.', 4000);
+                });
+        }
+    };
+
+    player.onerror = () => {
+        if (isPlaying) {
+            isPlaying = false;
+            setPlayingUI(false);
+            setConnectionStatus('offline');
+            showToast('Conexão perdida. Toque para reconectar.', 4000);
+        }
+    };
+
+    player.onended = () => {
+        // auto-reconnect
+        if (isPlaying) window.togglePlay();
+    };
+
+    function setPlayingUI(playing) {
+        document.getElementById('icon-play').style.display = playing ? 'none' : '';
+        document.getElementById('icon-pause').style.display = playing ? '' : 'none';
+        document.getElementById('btn-play').classList.toggle('playing', playing);
+        document.getElementById('vinyl-ring').parentElement.classList.toggle('playing', playing);
+        document.getElementById('vu-meter').classList.toggle('paused', !playing);
+    }
+
+    window.updateVolume = (v) => {
+        player.volume = v / 100;
+        document.getElementById('vol-pct').textContent = `${v}%`;
+    };
+
+    // ===== MUSIC REQUEST =====
+    window.sendRequest = async () => {
+        const input = document.getElementById('request-input');
+        const btn = document.getElementById('btn-send');
+        const status = document.getElementById('request-status');
+        const music = input.value.trim();
+        if (!music) return;
+
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        status.style.display = 'block';
+        status.style.color = 'var(--accent)';
+        status.textContent = 'A enviar pedido...';
+
+        try {
+            await addDoc(collection(db, 'artifacts', 'radio-via-cristais', 'public', 'data', 'pedidos_musica'), {
+                music: music,
+                timestamp: new Date().toISOString(),
+                status: 'pendente'
+            });
+            input.value = '';
+            status.textContent = '✅ Pedido enviado! O DJ pode tocar em breve.';
+            showToast('🎵 Pedido enviado com sucesso!');
+            setTimeout(() => { status.style.display = 'none'; }, 4000);
+        } catch (e) {
+            status.style.color = '#f87171';
+            status.textContent = '❌ Erro ao enviar. Tente novamente.';
+        } finally {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }
+    };
+
+    // ===== INIT =====
+    lucide.createIcons();
+    listenToPlaylist();
+</script>
+</body>
+</html>
