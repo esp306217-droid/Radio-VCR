@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0b1120">
+    <meta name="theme-color" content="#f8fafc">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Rádio Via Cristais · Ao Vivo</title>
@@ -186,7 +186,7 @@
             width: 220px; height: 220px;
             top: -10px; left: -10px;
             border-radius: 50%;
-            border: 2px solid rgba(16, 185, 129, 0.2);
+            border: 2px solid rgba(37, 99, 235, 0.2);
             display: none;
             animation: spin-vinyl 12s linear infinite;
         }
@@ -205,7 +205,7 @@
         .song-title {
             font-size: 20px;
             font-weight: 800;
-            color: #fff;
+            color: #1e293b;
             line-height: 1.2;
             letter-spacing: -0.3px;
             overflow: hidden;
@@ -295,7 +295,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            background: rgba(255,255,255,0.04);
+            background: rgba(15,23,42,0.03);
             border: 1px solid var(--border);
             border-radius: 16px;
             padding: 12px 16px;
@@ -305,7 +305,7 @@
             flex: 1;
             height: 4px;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.15);
+            background: rgba(15,23,42,0.1);
             border-radius: 4px;
             outline: none;
         }
@@ -367,14 +367,14 @@
             border-radius: 10px;
             object-fit: cover;
             border: 1px solid var(--border);
-            background: #1e293b;
+            background: #e2e8f0;
             flex-shrink: 0;
         }
         .queue-info { flex: 1; min-width: 0; }
         .queue-title {
             font-size: 13px;
             font-weight: 700;
-            color: #f1f5f9;
+            color: #334155;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -400,14 +400,14 @@
         }
         .request-input {
             flex: 1;
-            background: rgba(255,255,255,0.05);
+            background: rgba(15,23,42,0.03);
             border: 1px solid var(--border);
             border-radius: 14px;
             padding: 13px 16px;
             font-size: 14px;
             font-family: 'Inter', sans-serif;
             font-weight: 600;
-            color: #f1f5f9;
+            color: #1e293b;
             outline: none;
             transition: border-color 0.2s;
         }
@@ -588,7 +588,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<audio id="audio-player" crossorigin="anonymous"></audio>
+<audio id="audio-player" crossorigin="anonymous" playsinline webkit-playsinline></audio>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -605,12 +605,12 @@
         appId: "1:853836877115:web:5826ac7bf53d200a9a7b1e"
     };
 
-    // URL do servidor — sempre localhost:4000 se aberto como ficheiro local (file://)
+    // URL do servidor — busca do Firebase (tunnel_url) ou fallback localhost
     const isFileProtocol = window.location.protocol === 'file:';
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const NODE_SERVER_URL = (isFileProtocol || isLocalhost)
+    let NODE_SERVER_URL = (isFileProtocol || isLocalhost)
         ? 'http://localhost:4000'
-        : window.location.origin; // Se servido pelo mesmo servidor Node (ngrok/produção)
+        : ''; // será preenchido pelo Firebase
 
     // ===== INIT =====
     const fbApp = initializeApp(FIREBASE_CONFIG);
@@ -621,6 +621,19 @@
     let isPlaying   = false;
     let playlist    = [];
     let currentIdx  = 0;
+
+    // Buscar URL do túnel salva pelo estúdio no Firebase
+    const tunnelRef = doc(db, 'artifacts', 'radio-via-cristais', 'public', 'data', 'server_config', 'tunnel');
+    onSnapshot(tunnelRef, (snap) => {
+        if (snap.exists()) {
+            const data = snap.data();
+            if (data.url && !isFileProtocol && !isLocalhost) {
+                NODE_SERVER_URL = data.url.replace(/\/$/, '');
+                console.log('[CONFIG] Tunnel URL atualizada:', NODE_SERVER_URL);
+                checkServer(); // re-checar com a nova URL
+            }
+        }
+    }, (err) => console.warn('[CONFIG] Erro ao ler tunnel URL:', err));
 
     // Auth anônimo para acessar Firestore
     signInAnonymously(auth).catch(e => console.warn('[Auth]', e));
@@ -690,6 +703,10 @@
     // Verifica se o servidor Node está acessível (timeout manual — maior compatibilidade)
     async function checkServer() {
         if (isPlaying) return; // não sobrescreve o estado "Ao Vivo"
+        if (!NODE_SERVER_URL) {
+            setConnectionStatus('loading'); // aguardando URL do Firebase
+            return;
+        }
         try {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout
@@ -836,14 +853,29 @@
             isPlaying = false;
             setPlayingUI(false);
             setConnectionStatus('offline');
-            showToast('Conexão perdida. Toque para reconectar.', 4000);
+            showToast('Conexão perdida. Reconectando...', 3000);
+            // Auto-reconectar após 3s (essencial para iPhone/Safari)
+            setTimeout(() => {
+                if (!isPlaying && NODE_SERVER_URL) window.togglePlay();
+            }, 3500);
         }
     };
 
     player.onended = () => {
         // auto-reconnect
-        if (isPlaying) window.togglePlay();
+        if (isPlaying) {
+            setTimeout(() => window.togglePlay(), 1000);
+        }
     };
+
+    // iPhone Safari: manter sessão de áudio ativa mesmo com tela bloqueada
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Rádio Via Cristais',
+            artist: 'Ao Vivo',
+            album: 'Via Cristais'
+        });
+    }
 
     function setPlayingUI(playing) {
         document.getElementById('icon-play').style.display = playing ? 'none' : '';
